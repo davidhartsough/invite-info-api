@@ -8,8 +8,8 @@ import { createEvent, DateArray, EventAttributes } from "ics";
 initializeApp();
 const db = getFirestore().collection("events");
 
-// const cors = "invite-info.web.app";
-const cors = true;
+const cors = "invite-info.web.app";
+// const cors = true;
 
 function get(id: string) {
   return db.doc(id).get();
@@ -94,12 +94,11 @@ function getICSLink(eventInfo: EventInfo): string {
     productId: "Invite Info",
   };
   if (eventInfo.email) {
-    icsData.organizer = { email: eventInfo.email };
-    description += `\nContact Email: ${eventInfo.email}`;
+    description += `\n\nContact Email: ${eventInfo.email}`;
   }
   if (eventInfo.link) {
     icsData.url = eventInfo.link;
-    description += `\nLink: ${eventInfo.link}`;
+    description += `\n\nLink: ${eventInfo.link}`;
   }
   icsData.description = description;
   const { value } = createEvent(icsData);
@@ -123,17 +122,18 @@ export const info = onRequest({ cors }, async (req, res) => {
       res.status(404).json({ message: "Not found", id });
     } else {
       const eventInfo = getEventInfo(doc.data() as EventInfo);
+      log(`got an event titled: "${eventInfo.title}"`);
       const icsLink = getICSLink(eventInfo);
       const gCalLink = getGCalLink(eventInfo);
-      const data = {
-        id: doc.id,
-        ...eventInfo,
-        icsLink,
-        gCalLink,
-      };
-      log(`got an event titled: "${data.title}"`);
       log("200 success");
-      res.status(200).json({ info: data });
+      res.status(200).json({
+        info: {
+          id: doc.id,
+          ...eventInfo,
+          icsLink,
+          gCalLink,
+        },
+      });
     }
   }
 });
@@ -216,7 +216,16 @@ export const create = onRequest({ cors }, async (req, res) => {
     const id = generateId(eventInfo.title);
     log(id);
     await set(id, data);
+    const icsLink = getICSLink(data);
+    const gCalLink = getGCalLink(data);
     log("200 success");
-    res.status(200).json({ info: { id, ...data } });
+    res.status(200).json({
+      info: {
+        id,
+        ...data,
+        icsLink,
+        gCalLink,
+      },
+    });
   }
 });
