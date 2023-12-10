@@ -3,6 +3,7 @@ import { log } from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import removeAccents from "remove-accents";
+import { createEvent, DateArray, EventAttributes } from "ics";
 
 initializeApp();
 const db = getFirestore().collection("events");
@@ -49,6 +50,64 @@ function getEventInfo({
   return eventInfo;
 }
 
+function getUTC(dt: number): string {
+  return `${new Date(dt)
+    .toISOString()
+    .slice(0, 16)
+    .replace(/-/g, "")
+    .replace(":", "")}00Z`;
+}
+
+function getGCalLink(eventInfo: EventInfo): string {
+  const startUTC = getUTC(eventInfo.start);
+  const endUTC = getUTC(eventInfo.end);
+  const searchParams = new URLSearchParams({
+    action: "TEMPLATE",
+    dates: `${startUTC}/${endUTC}`,
+    text: eventInfo.title,
+    location: eventInfo.location,
+    details: eventInfo.description,
+  });
+  return `https://calendar.google.com/calendar/event?${searchParams.toString()}`;
+}
+
+function getDateTimeArray(ts: number): DateArray {
+  const [date, time] = new Date(ts).toISOString().slice(0, 16).split("T");
+  return [...date.split("-"), ...time.split(":")].map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+}
+
+function getICSLink(eventInfo: EventInfo): string {
+  let description = eventInfo.description;
+  const icsData: EventAttributes = {
+    title: eventInfo.title,
+    location: eventInfo.location,
+    start: getDateTimeArray(eventInfo.start),
+    end: getDateTimeArray(eventInfo.end),
+    startInputType: "utc",
+    endInputType: "utc",
+    productId: "Invite Info",
+  };
+  if (eventInfo.email) {
+    icsData.organizer = { email: eventInfo.email };
+    description += `\nContact Email: ${eventInfo.email}`;
+  }
+  if (eventInfo.link) {
+    icsData.url = eventInfo.link;
+    description += `\nLink: ${eventInfo.link}`;
+  }
+  icsData.description = description;
+  const { value } = createEvent(icsData);
+  return `data:text/calendar;charset=UTF-8,${encodeURIComponent(
+    value as string
+  )}`;
+}
+
 export const info = onRequest({ cors }, async (req, res) => {
   log("info invoked");
   const { id } = req.query;
@@ -63,9 +122,14 @@ export const info = onRequest({ cors }, async (req, res) => {
       log("404 not found");
       res.status(404).json({ message: "Not found", id });
     } else {
+      const eventInfo = getEventInfo(doc.data() as EventInfo);
+      const icsLink = getICSLink(eventInfo);
+      const gCalLink = getGCalLink(eventInfo);
       const data = {
         id: doc.id,
-        ...getEventInfo(doc.data() as EventInfo),
+        ...eventInfo,
+        icsLink,
+        gCalLink,
       };
       log(`got an event titled: "${data.title}"`);
       log("200 success");

@@ -23,6 +23,7 @@
   "dependencies": {
     "firebase-admin": "^11.11.1",
     "firebase-functions": "^4.5.0",
+    "ics": "^3.5.0",
     "remove-accents": "^0.5.0"
   },
   "devDependencies": {
