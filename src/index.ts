@@ -205,27 +205,34 @@ function isEventInfo(eventInfo: EventInfo): eventInfo is EventInfo {
 
 export const create = onRequest({ cors }, async (req, res) => {
   log("create invoked");
-  const { eventInfo } = req.body;
-  if (!isEventInfo(eventInfo)) {
-    log("400 invalid");
-    res.status(400).json({ message: "Invalid request", eventInfo });
-  } else {
-    log("let's go create this event");
-    const data = getEventInfo(eventInfo);
-    log(`gonna make an event titled: "${eventInfo.title}"`);
-    const id = generateId(eventInfo.title);
-    log(id);
-    await set(id, data);
-    const icsLink = getICSLink(data);
-    const gCalLink = getGCalLink(data);
-    log("200 success");
-    res.status(200).json({
-      info: {
-        id,
-        ...data,
-        icsLink,
-        gCalLink,
-      },
-    });
+  if (req.method !== "POST") {
+    res.status(400).json({ message: "Invalid method" });
   }
+  const { eventInfo } = req.body;
+  try {
+    if (!isEventInfo(eventInfo)) {
+      log("400 invalid");
+      res.status(400).json({ message: "Invalid request", eventInfo });
+    }
+  } catch (error) {
+    log("400 invalid");
+    log(error);
+    res.status(400).json({ message: "Invalid request", eventInfo, error });
+  }
+  const data = getEventInfo(eventInfo);
+  log(`let's go make an event titled: "${eventInfo.title}"`);
+  const id = generateId(eventInfo.title);
+  log(id);
+  await set(id, data);
+  const icsLink = getICSLink(data);
+  const gCalLink = getGCalLink(data);
+  log("200 success");
+  res.status(200).json({
+    info: {
+      id,
+      ...data,
+      icsLink,
+      gCalLink,
+    },
+  });
 });
