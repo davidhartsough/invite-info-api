@@ -144,7 +144,7 @@ const getRandomItem = (str: string) => str.charAt(getRandomNumber(str.length));
 const getRandomChar = () => getRandomItem(numberOptions);
 function generateRandomId() {
   let id = "";
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     id += getRandomChar();
   }
   return id;
