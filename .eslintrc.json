@@ -7,13 +7,17 @@
     "eslint:recommended",
     "node",
     "plugin:n/recommended",
-    "plugin:import/recommended",
-    "plugin:import/typescript",
     "plugin:@typescript-eslint/recommended",
+    "plugin:import/recommended",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript",
+    "plugin:import-x/recommended",
+    "plugin:import-x/typescript",
     "prettier"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "import"],
   "overrides": [],
   "ignorePatterns": ["/lib/**/*"],
   "parserOptions": {
@@ -27,9 +31,18 @@
     "import/resolver": {
       "typescript": true,
       "node": true
+    },
+    "import-x/resolver": {
+      "typescript": true,
+      "node": true
+    },
+    "node": {
+      "tryExtensions": [".js", ".json", ".ts", ".d.ts"]
     }
   },
   "rules": {
-    "import/prefer-default-export": "off"
+    "import/prefer-default-export": "off",
+    "n/no-missing-import": "off",
+    "node/no-missing-import": "off"
   }
 }
